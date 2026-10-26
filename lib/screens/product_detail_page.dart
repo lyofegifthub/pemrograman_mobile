@@ -4,9 +4,7 @@ import 'package:get/get.dart';
 
 import '../controllers/cart_controller.dart';
 import '../models/product.dart';
-import '../widgets/price_label.dart';
-import '../widgets/category_tag.dart';
-import '../widgets/stock_badge.dart';
+import '../utils/currency_formatter.dart';
 
 class ProductDetailPage extends StatefulWidget {
   const ProductDetailPage({super.key});
@@ -19,26 +17,31 @@ class ProductDetailPage extends StatefulWidget {
 class _ProductDetailPageState extends State<ProductDetailPage> {
   int quantity = 1;
 
-  late final CartController cartController;
-
-  @override
-  void initState() {
-    super.initState();
-    cartController = Get.find<CartController>();
-  }
-
   @override
   Widget build(BuildContext context) {
-    final product = Get.arguments as Product;
-    final description =
-        product.description ?? 'Tidak ada deskripsi produk.';
+    final dynamic argument = Get.arguments;
 
-    final DiscountedProduct? discountedProduct =
-        product is DiscountedProduct ? product : null;
+    if (argument is! Product) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Detail Produk')),
+        body: const Center(
+          child: Text('Data produk tidak ditemukan.'),
+        ),
+      );
+    }
+
+    final Product product = argument;
+    final String description =
+        (product.description?.isNotEmpty ?? false)
+            ? product.description!
+            : 'Tidak ada deskripsi produk.';
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF7F8FA),
       appBar: AppBar(
         title: const Text('Detail Produk'),
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -47,52 +50,93 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           children: [
             Container(
               width: double.infinity,
-              height: 220,
+              height: 280,
+              padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(16),
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
               ),
-              child: const Icon(
-                Icons.shopping_bag_outlined,
-                size: 90,
-                color: Colors.grey,
-              ),
+              child: product.image.isEmpty
+                  ? const Icon(
+                      Icons.image_not_supported_outlined,
+                      size: 72,
+                      color: Colors.grey,
+                    )
+                  : Image.network(
+                      product.image,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Icon(
+                          Icons.broken_image_outlined,
+                          size: 72,
+                          color: Colors.grey,
+                        );
+                      },
+                      loadingBuilder: (context, child, progress) {
+                        if (progress == null) return child;
+
+                        return const Center(
+                          child: CircularProgressIndicator(),
+                        );
+                      },
+                    ),
             ),
             const SizedBox(height: 20),
             Text(
               product.name,
               style: const TextStyle(
-                fontSize: 25,
+                fontSize: 23,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 10),
-            if (discountedProduct != null) ...[
-              Text(
-                'Rp ${discountedProduct.price.toStringAsFixed(0)}',
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey,
-                  decoration: TextDecoration.lineThrough,
-                ),
+            Text(
+              CurrencyFormatter.format(product.price),
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFFE85D35),
               ),
-              const SizedBox(height: 3),
-              PriceLabel(
-                price: discountedProduct.finalPrice,
-              ),
-            ] else
-              PriceLabel(price: product.price),
+            ),
             const SizedBox(height: 12),
-            Row(
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
               children: [
-                CategoryTag(category: product.category),
-                const SizedBox(width: 10),
-                StockBadge(status: product.getStatusStok()),
+                Chip(
+                  avatar: const Icon(
+                    Icons.category_outlined,
+                    size: 18,
+                  ),
+                  label: Text(product.category),
+                ),
+                if (product.rating != null)
+                  Chip(
+                    avatar: const Icon(
+                      Icons.star,
+                      size: 18,
+                      color: Colors.amber,
+                    ),
+                    label: Text(
+                      product.rating!.toStringAsFixed(1),
+                    ),
+                  ),
               ],
             ),
-            const SizedBox(height: 20),
+            if (product.shopName.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const CircleAvatar(
+                  child: Icon(Icons.storefront_outlined),
+                ),
+                title: const Text('Nama toko'),
+                subtitle: Text(product.shopName),
+              ),
+            ],
+            const SizedBox(height: 16),
             const Text(
-              'Deskripsi',
+              'Deskripsi Produk',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -102,88 +146,113 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             Text(
               description,
               style: const TextStyle(
-                fontSize: 15,
-                height: 1.5,
+                fontSize: 14,
+                height: 1.6,
+                color: Colors.black87,
               ),
             ),
-            const SizedBox(height: 12),
-            Text(
-              'Stok tersedia: ${product.stock}',
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 22),
             const Text(
-              'Jumlah',
+              'Jumlah Pembelian',
               style: TextStyle(
-                fontSize: 18,
                 fontWeight: FontWeight.bold,
+                fontSize: 16,
               ),
             ),
             const SizedBox(height: 10),
             Row(
               children: [
-                _quantityButton(
-                  icon: Icons.remove,
+                IconButton.outlined(
                   onPressed: quantity > 1
-                      ? () => setState(() => quantity--)
+                      ? () {
+                          setState(() {
+                            quantity--;
+                          });
+                        }
                       : null,
+                  icon: const Icon(Icons.remove),
                 ),
-                const SizedBox(width: 20),
+                const SizedBox(width: 16),
                 Text(
                   '$quantity',
                   style: const TextStyle(
-                    fontSize: 20,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(width: 20),
-                _quantityButton(
-                  icon: Icons.add,
+                const SizedBox(width: 16),
+                IconButton.outlined(
                   onPressed: quantity < product.stock
-                      ? () => setState(() => quantity++)
+                      ? () {
+                          setState(() {
+                            quantity++;
+                          });
+                        }
                       : null,
+                  icon: const Icon(Icons.add),
+                ),
+                const Spacer(),
+                Text(
+                  'Stok: ${product.stock}',
+                  style: const TextStyle(color: Colors.grey),
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 22),
             SizedBox(
               width: double.infinity,
+              height: 52,
               child: ElevatedButton.icon(
-                onPressed: product.stock > 0
-                    ? () {
+                onPressed: product.stock <= 0
+                    ? null
+                    : () {
+                        if (!Get.isRegistered<CartController>()) {
+                          Get.snackbar(
+                            'Keranjang belum siap',
+                            'CartController belum didaftarkan.',
+                            snackPosition: SnackPosition.BOTTOM,
+                          );
+                          return;
+                        }
+
+                        final cartController =
+                            Get.find<CartController>();
+
                         cartController.addToCart(
                           product,
                           quantity: quantity,
                         );
+
                         Get.back();
-                      }
-                    : null,
-                icon: const Icon(Icons.shopping_cart),
-                label: const Text('Tambah ke Keranjang'),
+
+                        Get.snackbar(
+                          'Berhasil',
+                          '$quantity ${product.name} ditambahkan ke keranjang.',
+                          snackPosition: SnackPosition.BOTTOM,
+                        );
+                      },
+                icon: const Icon(Icons.shopping_cart_outlined),
+                label: const Text(
+                  'Tambah ke Keranjang',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ),
-            const SizedBox(height: 10),
+            if (product.marketplaceUrl.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              const Text(
+                'Harga dan ketersediaan dari marketplace dapat berubah.',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey,
+                ),
+              ),
+            ],
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _quantityButton({
-    required IconData icon,
-    required VoidCallback? onPressed,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: IconButton(
-        onPressed: onPressed,
-        icon: Icon(icon),
       ),
     );
   }

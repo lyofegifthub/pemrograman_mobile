@@ -1,9 +1,10 @@
+
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../models/product.dart';
-import 'price_label.dart';
-import 'stock_badge.dart';
-import 'category_tag.dart';
+import '../screens/product_detail_page.dart';
+import '../utils/currency_formatter.dart';
 
 class ProductCard extends StatefulWidget {
   final Product product;
@@ -18,192 +19,196 @@ class ProductCard extends StatefulWidget {
 }
 
 class _ProductCardState extends State<ProductCard> {
-  bool isFavorite = false;
+  bool _isFavorite = false;
 
   @override
   Widget build(BuildContext context) {
-    DiscountedProduct? discountedProduct;
+    final product = widget.product;
 
-    if (widget.product is DiscountedProduct) {
-      discountedProduct =
-          widget.product as DiscountedProduct;
-    }
-
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      elevation: 2,
+      margin: const EdgeInsets.only(bottom: 14),
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // =========================
-            // GAMBAR PRODUK
-            // =========================
-            SizedBox(
-              width: 120,
-              height: 135,
-              child: Stack(
-                children: [
-                  Container(
-                    width: 120,
-                    height: 135,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.shopping_bag_outlined,
-                      size: 50,
-                      color: Colors.grey,
-                    ),
-                  ),
-
-                  // Badge diskon
-                  if (discountedProduct != null)
-                    Positioned(
-                      top: 7,
-                      left: 7,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 7,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius:
-                              BorderRadius.circular(6),
-                        ),
-                        child: const Text(
-                          'Diskon',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 10,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                  // Badge stok
-                  Positioned(
-                    left: 6,
-                    bottom: 6,
-                    child: StockBadge(
-                      status:
-                          widget.product.getStatusStok(),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(width: 12),
-
-            // =========================
-            // INFORMASI PRODUK
-            // =========================
-            Expanded(
-              child: SizedBox(
+      child: InkWell(
+        onTap: () {
+          Get.to(
+            () => const ProductDetailPage(),
+            arguments: product,
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 120,
                 height: 135,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: product.image.isEmpty
+                      ? const ColoredBox(
+                          color: Color(0xFFF3F4F6),
+                          child: Icon(
+                            Icons.image_not_supported_outlined,
+                            size: 40,
+                          ),
+                        )
+                      : Image.network(
+                          product.image,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) {
+                            return const ColoredBox(
+                              color: Color(0xFFF3F4F6),
+                              child: Icon(
+                                Icons.broken_image_outlined,
+                                size: 40,
+                              ),
+                            );
+                          },
+                          loadingBuilder: (context, child, progress) {
+                            if (progress == null) return child;
+
+                            return const Center(
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
                 child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Nama + Favorite
                     Row(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
                           child: Text(
-                            widget.product.name,
+                            product.name,
                             maxLines: 2,
-                            overflow:
-                                TextOverflow.ellipsis,
+                            overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),
-                        const SizedBox(width: 4),
                         IconButton(
-                          padding: EdgeInsets.zero,
-                          constraints:
-                              const BoxConstraints(),
                           onPressed: () {
                             setState(() {
-                              isFavorite = !isFavorite;
+                              _isFavorite = !_isFavorite;
                             });
                           },
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                            minWidth: 32,
+                            minHeight: 32,
+                          ),
                           icon: Icon(
-                            isFavorite
+                            _isFavorite
                                 ? Icons.favorite
                                 : Icons.favorite_border,
-                            size: 21,
-                            color: isFavorite
+                            color: _isFavorite
                                 ? Colors.red
                                 : Colors.grey,
                           ),
                         ),
                       ],
                     ),
-
-                    const SizedBox(height: 7),
-
-                    // Kategori
-                    CategoryTag(
-                      category: widget.product.category,
-                    ),
-
-                    const Spacer(),
-
-                    // Harga
-                    if (discountedProduct != null) ...[
-                      Text(
-                        'Rp ${discountedProduct.price.toStringAsFixed(0)}',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey,
-                          decoration:
-                              TextDecoration.lineThrough,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      PriceLabel(
-                        price:
-                            discountedProduct.finalPrice,
-                      ),
-                    ] else
-                      PriceLabel(
-                        price: widget.product.price,
-                      ),
-
                     const SizedBox(height: 5),
-
-                    // Stok
                     Text(
-                      'Stok: ${widget.product.stock}',
+                      CurrencyFormatter.format(product.price),
                       style: const TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey,
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFFE85D35),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    if (product.shopName.isNotEmpty)
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.storefront_outlined,
+                            size: 14,
+                            color: Colors.grey,
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              product.shopName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    if (product.rating != null) ...[
+                      const SizedBox(height: 5),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.star_rounded,
+                            size: 17,
+                            color: Colors.amber,
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            product.rating!.toStringAsFixed(1),
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          if (product.soldLabel.isNotEmpty)
+                            Expanded(
+                              child: Text(
+                                ' • ${product.soldLabel}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 9,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE8F5E9),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        product.category,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Color(0xFF2E7D32),
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
