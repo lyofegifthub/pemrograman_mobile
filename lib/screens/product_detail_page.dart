@@ -1,5 +1,8 @@
-import 'package:flutter/material.dart';
 
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+
+import '../controllers/cart_controller.dart';
 import '../models/product.dart';
 import '../widgets/price_label.dart';
 import '../widgets/category_tag.dart';
@@ -9,54 +12,45 @@ class ProductDetailPage extends StatefulWidget {
   const ProductDetailPage({super.key});
 
   @override
-  State<ProductDetailPage> createState() {
-    return _ProductDetailPageState();
-  }
+  State<ProductDetailPage> createState() =>
+      _ProductDetailPageState();
 }
 
-class _ProductDetailPageState
-    extends State<ProductDetailPage> {
+class _ProductDetailPageState extends State<ProductDetailPage> {
   int quantity = 1;
+
+  late final CartController cartController;
+
+  @override
+  void initState() {
+    super.initState();
+    cartController = Get.find<CartController>();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final product =
-        ModalRoute.of(context)!.settings.arguments
-            as Product;
-
+    final product = Get.arguments as Product;
     final description =
-        product.description ??
-        'Tidak ada deskripsi produk.';
+        product.description ?? 'Tidak ada deskripsi produk.';
 
-    DiscountedProduct? discountedProduct;
-
-    if (product is DiscountedProduct) {
-      discountedProduct =
-          product as DiscountedProduct;
-    }
+    final DiscountedProduct? discountedProduct =
+        product is DiscountedProduct ? product : null;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Detail Produk',
-        ),
+        title: const Text('Detail Produk'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment:
-              CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // =========================
-            // GAMBAR PRODUK
-            // =========================
             Container(
               width: double.infinity,
               height: 220,
               decoration: BoxDecoration(
                 color: Colors.grey.shade100,
-                borderRadius:
-                    BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(16),
               ),
               child: const Icon(
                 Icons.shopping_bag_outlined,
@@ -64,12 +58,7 @@ class _ProductDetailPageState
                 color: Colors.grey,
               ),
             ),
-
             const SizedBox(height: 20),
-
-            // =========================
-            // NAMA PRODUK
-            // =========================
             Text(
               product.name,
               style: const TextStyle(
@@ -77,55 +66,31 @@ class _ProductDetailPageState
                 fontWeight: FontWeight.bold,
               ),
             ),
-
             const SizedBox(height: 10),
-
-            // =========================
-            // HARGA
-            // =========================
             if (discountedProduct != null) ...[
               Text(
                 'Rp ${discountedProduct.price.toStringAsFixed(0)}',
                 style: const TextStyle(
                   fontSize: 14,
                   color: Colors.grey,
-                  decoration:
-                      TextDecoration.lineThrough,
+                  decoration: TextDecoration.lineThrough,
                 ),
               ),
               const SizedBox(height: 3),
               PriceLabel(
-                price:
-                    discountedProduct.finalPrice,
+                price: discountedProduct.finalPrice,
               ),
             ] else
-              PriceLabel(
-                price: product.price,
-              ),
-
+              PriceLabel(price: product.price),
             const SizedBox(height: 12),
-
-            // =========================
-            // KATEGORI + STATUS STOK
-            // =========================
             Row(
               children: [
-                CategoryTag(
-                  category: product.category,
-                ),
+                CategoryTag(category: product.category),
                 const SizedBox(width: 10),
-                StockBadge(
-                  status:
-                      product.getStatusStok(),
-                ),
+                StockBadge(status: product.getStatusStok()),
               ],
             ),
-
             const SizedBox(height: 20),
-
-            // =========================
-            // DESKRIPSI
-            // =========================
             const Text(
               'Deskripsi',
               style: TextStyle(
@@ -133,9 +98,7 @@ class _ProductDetailPageState
                 fontWeight: FontWeight.bold,
               ),
             ),
-
             const SizedBox(height: 8),
-
             Text(
               description,
               style: const TextStyle(
@@ -143,12 +106,7 @@ class _ProductDetailPageState
                 height: 1.5,
               ),
             ),
-
             const SizedBox(height: 12),
-
-            // =========================
-            // STOK
-            // =========================
             Text(
               'Stok tersedia: ${product.stock}',
               style: const TextStyle(
@@ -156,12 +114,7 @@ class _ProductDetailPageState
                 fontWeight: FontWeight.w500,
               ),
             ),
-
             const SizedBox(height: 24),
-
-            // =========================
-            // JUMLAH
-            // =========================
             const Text(
               'Jumlah',
               style: TextStyle(
@@ -169,35 +122,16 @@ class _ProductDetailPageState
                 fontWeight: FontWeight.bold,
               ),
             ),
-
             const SizedBox(height: 10),
-
             Row(
               children: [
-                Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: Colors.grey,
-                    ),
-                    borderRadius:
-                        BorderRadius.circular(10),
-                  ),
-                  child: IconButton(
-                    onPressed: quantity > 1
-                        ? () {
-                            setState(() {
-                              quantity--;
-                            });
-                          }
-                        : null,
-                    icon: const Icon(
-                      Icons.remove,
-                    ),
-                  ),
+                _quantityButton(
+                  icon: Icons.remove,
+                  onPressed: quantity > 1
+                      ? () => setState(() => quantity--)
+                      : null,
                 ),
-
                 const SizedBox(width: 20),
-
                 Text(
                   '$quantity',
                   style: const TextStyle(
@@ -205,62 +139,51 @@ class _ProductDetailPageState
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-
                 const SizedBox(width: 20),
-
-                Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: Colors.grey,
-                    ),
-                    borderRadius:
-                        BorderRadius.circular(10),
-                  ),
-                  child: IconButton(
-                    onPressed:
-                        quantity < product.stock
-                            ? () {
-                                setState(() {
-                                  quantity++;
-                                });
-                              }
-                            : null,
-                    icon: const Icon(
-                      Icons.add,
-                    ),
-                  ),
+                _quantityButton(
+                  icon: Icons.add,
+                  onPressed: quantity < product.stock
+                      ? () => setState(() => quantity++)
+                      : null,
                 ),
               ],
             ),
-
             const SizedBox(height: 24),
-
-            // =========================
-            // TAMBAH KE KERANJANG
-            // =========================
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: product.stock > 0
                     ? () {
-                        Navigator.pop(
-                          context,
-                          quantity,
+                        cartController.addToCart(
+                          product,
+                          quantity: quantity,
                         );
+                        Get.back();
                       }
                     : null,
-                icon: const Icon(
-                  Icons.shopping_cart,
-                ),
-                label: const Text(
-                  'Tambah ke Keranjang',
-                ),
+                icon: const Icon(Icons.shopping_cart),
+                label: const Text('Tambah ke Keranjang'),
               ),
             ),
-
             const SizedBox(height: 10),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _quantityButton({
+    required IconData icon,
+    required VoidCallback? onPressed,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: IconButton(
+        onPressed: onPressed,
+        icon: Icon(icon),
       ),
     );
   }

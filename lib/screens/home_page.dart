@@ -1,7 +1,10 @@
+
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../models/product.dart';
 import '../widgets/product_card.dart';
+import 'product_detail_page.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -12,27 +15,21 @@ class HomePage extends StatelessWidget {
       appBar: AppBar(
         title: const Text(
           'TokoKita',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         actions: [
           IconButton(
             onPressed: () {
-              // Keranjang digunakan melalui BottomNavigationBar
+              // Keranjang dapat dibuka melalui bottom navigation.
             },
-            icon: const Icon(
-              Icons.shopping_cart_outlined,
-            ),
+            icon: const Icon(Icons.shopping_cart_outlined),
           ),
         ],
       ),
-
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment:
-              CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
               'Daftar Produk',
@@ -41,9 +38,7 @@ class HomePage extends StatelessWidget {
                 fontWeight: FontWeight.bold,
               ),
             ),
-
             const SizedBox(height: 6),
-
             const Text(
               'Temukan produk terbaik untuk kebutuhanmu',
               style: TextStyle(
@@ -51,9 +46,7 @@ class HomePage extends StatelessWidget {
                 color: Colors.grey,
               ),
             ),
-
             const SizedBox(height: 20),
-
             Text(
               '${dummyProducts.length} Produk',
               style: const TextStyle(
@@ -61,55 +54,23 @@ class HomePage extends StatelessWidget {
                 fontWeight: FontWeight.w600,
               ),
             ),
-
             const SizedBox(height: 12),
-
             Expanded(
               child: ListView.separated(
                 itemCount: dummyProducts.length,
-
-                separatorBuilder: (
-                  context,
-                  index,
-                ) {
-                  return const SizedBox(
-                    height: 12,
-                  );
-                },
-
-                itemBuilder: (
-                  context,
-                  index,
-                ) {
-                  final product =
-                      dummyProducts[index];
+                separatorBuilder: (context, index) =>
+                    const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  final Product product = dummyProducts[index];
 
                   return GestureDetector(
-                    onTap: () async {
-                      final result =
-                          await Navigator.pushNamed(
-                        context,
-                        '/detail',
+                    onTap: () {
+                      Get.to(
+                        () => const ProductDetailPage(),
                         arguments: product,
                       );
-
-                      if (result is int &&
-                          result > 0) {
-                        ScaffoldMessenger.of(
-                          context,
-                        ).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              '$result item ditambahkan ke keranjang',
-                            ),
-                          ),
-                        );
-                      }
                     },
-
-                    child: ProductCard(
-                      product: product,
-                    ),
+                    child: ProductCard(product: product),
                   );
                 },
               ),
